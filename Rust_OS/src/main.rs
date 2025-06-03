@@ -6,23 +6,78 @@
 
 use core::panic::PanicInfo;
 use Rust_OS::println;
+use x86_64::{structures::paging::Translate, VirtAddr,structures::paging::Page};
+use Rust_OS::memory;
+use Rust_OS::memory::BootInfoFrameAllocator;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    println!("Hello World{}", "!");
+use bootloader::{BootInfo, entry_point};
 
+entry_point!(kernel_main);
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    Rust_OS::init();
+
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
+
+
+
+
+
+    // as before
     #[cfg(test)]
     test_main();
-
-    loop {}
+    Rust_OS::hlt_loop();  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /// This function is called on panic.
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
+    Rust_OS::hlt_loop(); 
 }
 
 #[cfg(test)]
