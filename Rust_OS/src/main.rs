@@ -1,36 +1,32 @@
-// main.rs
-
-// can't use STD in a bare metal environment
 #![no_std]
-// cant use main in no_std
 #![no_main]
-
-
-
-
-
+#![feature(custom_test_frameworks)]
+#![test_runner(Rust_OS::test_runner)]
+#![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
-
-/// This function is called on panic. and says to loop on a panic
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
-}
-
-
-static HELLO: &[u8] = b"Hello World!";
+use Rust_OS::println;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
-    let vga_buffer = 0xb8000 as *mut u8;
+    println!("Hello World{}", "!");
 
-    for (i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+    #[cfg(test)]
+    test_main();
 
     loop {}
+}
+
+/// This function is called on panic.
+#[cfg(not(test))]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {}
+}
+
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    Rust_OS::test_panic_handler(info)
 }
