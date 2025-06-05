@@ -1,12 +1,14 @@
 #![no_std]
-#![cfg_attr(test, no_main)]
-#![feature(custom_test_frameworks)]
+#![no_main]
 #![feature(abi_x86_interrupt)]
-#![test_runner(crate::test_runner)]
-#![reexport_test_harness_main = "test_main"]
+#![feature(alloc_error_handler)]
 
 use core::panic::PanicInfo;
+use bootloader::BootInfo;
 
+
+pub mod memory;
+pub use memory::{get_free_memory_regions,print_memory_layout, init_mapper};
 pub mod gdt;
 pub mod interrupts;
 pub mod serial;
@@ -18,35 +20,6 @@ pub fn init() {
     interrupts::init_idt();
     unsafe { interrupts::PICS.lock().initialize() };
     x86_64::instructions::interrupts::enable();
-}
-pub trait Testable {
-    fn run(&self) -> ();
-}
-
-impl<T> Testable for T
-where
-    T: Fn(),
-{
-    fn run(&self) {
-        serial_print!("{}...\t", core::any::type_name::<T>());
-        self();
-        serial_println!("[ok]");
-    }
-}
-
-pub fn test_runner(tests: &[&dyn Testable]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test.run();
-    }
-    exit_qemu(QemuExitCode::Success);
-}
-
-pub fn test_panic_handler(info: &PanicInfo) -> ! {
-    serial_println!("[failed]\n");
-    serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-    hlt_loop();
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,17 +44,7 @@ pub fn hlt_loop() -> ! {
     }
 }
 
-/// Entry point for `cargo xtest`
-#[cfg(test)]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    init();
-    test_main();
-    hlt_loop();
-}
+extern crate alloc;
 
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    test_panic_handler(info)
-}
+pub mod allocator;
+

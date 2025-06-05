@@ -1,15 +1,24 @@
 #![no_std]
 #![no_main]
-#![feature(custom_test_frameworks)]
-#![test_runner(Rust_OS::test_runner)]
-#![reexport_test_harness_main = "test_main"]
 
-use Rust_OS::println;
+
+
+use Rust_OS::{get_free_memory_regions, print_memory_layout, init_mapper, println,
+    interrupts::KEYBOARD_BUFFER,
+    memory::BootFrameAlloc,
+};
+
 use core::panic::PanicInfo;
-use Rust_OS::interrupts::KEYBOARD_BUFFER;
 use x86_64::instructions::interrupts;
+use x86_64::structures::paging::{PageTableFlags, PhysFrame, Page, Mapper};
+use x86_64::VirtAddr;
+use x86_64::structures::paging::FrameAllocator;
 use bootloader::{BootInfo, entry_point};
+use Rust_OS::memory::init_heap;
 
+extern crate alloc;
+
+use alloc::boxed::Box;
 
 
 entry_point!(kernel_main);
@@ -19,41 +28,28 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     Rust_OS::init();
 
 
-    let memory_map = &boot_info.memory_map;
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { init_mapper(phys_mem_offset) };
 
-    for region in memory_map.iter() {
-        println!("{:?}", region);
-    }
+    let mut frame_allocator = unsafe {
+        BootFrameAlloc::init(&boot_info.memory_map)
+    };
 
+    init_heap(&mut mapper, frame_allocator);
 
-    #[cfg(test)]
-    test_main();
+    let test_box = Box::new(42);
+    println!("It's a Box {}", test_box);
 
-    println!("It did not crash!");
-    loop{
-        interrupts::without_interrupts(|| {
-            if let Some(key) = KEYBOARD_BUFFER.lock().read_key() {
-                println!("Key: {}", key as char);
-            }
-        });
-    }
+    Rust_OS::hlt_loop();
 }
 
+
+
+
 /// This function is called on panic.
-#[cfg(not(test))]
+
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
     Rust_OS::hlt_loop();
-}
-
-#[cfg(test)]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    Rust_OS::test_panic_handler(info)
-}
-
-#[test_case]
-fn trivial_assertion() {
-    assert_eq!(1, 1);
 }
