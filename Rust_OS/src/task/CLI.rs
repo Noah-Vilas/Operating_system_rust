@@ -8,6 +8,8 @@ use futures_util::task::AtomicWaker;
 
 use crate::println;
 
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use spin::Mutex;
 use alloc::string::String;
 use alloc::sync::Arc;
@@ -74,8 +76,73 @@ pub(crate) fn add_command(cmd: String) {
 
 /////////////////////
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum lex_type{
+    Number,
+    Stri,
+    Add
+}
+
+
+
+fn lexer(command: &str) -> Vec<Box<(String, lex_type)>> {
+    use alloc::{vec::Vec, string::String};
+
+    let mut vec: Vec<Box<(String, lex_type)>> = Vec::new();
+    let mut tmp = String::new();
+    let mut chars = command.char_indices().peekable();
+
+    while let Some((_i, ch)) = chars.next() {
+        if ch != '+' {
+            tmp.push(ch);
+        }
+
+        let at_end = chars.peek().is_none();
+        if ch == '+' || at_end {
+            if !tmp.is_empty() {
+                vec.push(Box::new((tmp.clone(), lex_type::Number)));
+                tmp.clear();
+            }
+            if ch == '+' {
+                vec.push(Box::new(("+".into(), lex_type::Add)));
+            }
+        }
+    }
+
+    vec
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 fn handle_command(command: &str){
-    println!("hello");
+    let tokens = lexer(command);
+    println!();
+    if tokens.len() >= 3 {
+        let t0 = &tokens[0];
+        let t1 = &tokens[1];
+        let t2 = &tokens[2];
+
+        if t0.1 == lex_type::Number && t1.1 == lex_type::Add && t2.1 == lex_type::Number {
+            let n1 = t0.0.parse::<i32>().unwrap_or(0);
+            let n2 = t2.0.parse::<i32>().unwrap_or(0);
+            println!("{}", n1 + n2);
+        } else {
+            println!("Pattern does not match.");
+        }
+    } else {
+        println!("Not enough tokens.");
+    }
 }
 
 pub async fn CLI_START() {
@@ -86,3 +153,5 @@ pub async fn CLI_START() {
         handle_command(&line);
     }
 }
+
+

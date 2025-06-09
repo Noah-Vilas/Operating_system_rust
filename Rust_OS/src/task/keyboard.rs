@@ -90,10 +90,8 @@ pub async fn handle_keypresses() {
             if let Some(key) = keyboard.process_keyevent(key_event) {
                 match key {
                     DecodedKey::Unicode('\n') => {
-                        println!("test1");
                         let mut line = INPUT_LINE.lock();
                         let cmd = core::mem::take(&mut *line);
-                        println!("test2");
                         crate::task::CLI::add_command(cmd);
                     },
                     DecodedKey::Unicode(ch) => {
