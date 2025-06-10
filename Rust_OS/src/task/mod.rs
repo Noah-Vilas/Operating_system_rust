@@ -4,6 +4,7 @@ use alloc::boxed::Box;
 pub mod executor;
 pub mod keyboard;
 pub mod CLI;
+pub mod read_drive;
 
 pub struct Task {
     id: TaskId,

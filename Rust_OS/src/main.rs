@@ -5,7 +5,7 @@
 
 use Rust_OS::{get_free_memory_regions, print_memory_layout, init_mapper, println,
     memory::BootFrameAlloc,
-    task::{keyboard, CLI}
+    task::{keyboard, CLI, read_drive}
 };
 use Rust_OS::task::{Task, executor::Executor};
 use core::panic::PanicInfo;
@@ -25,6 +25,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
 
     let mut executor = Executor::new();
+    executor.spawn(Task::new(read_drive::Test_drive()));
     executor.spawn(Task::new(CLI::CLI_START()));
     executor.spawn(Task::new(keyboard::handle_keypresses()));
     executor.run();
