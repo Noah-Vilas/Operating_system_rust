@@ -80,7 +80,10 @@ pub(crate) fn add_command(cmd: String) {
 pub enum lex_type{
     Number,
     Stri,
-    Add
+    Add,
+    Mult,
+    Div,
+    Sub
 }
 
 
@@ -93,18 +96,24 @@ fn lexer(command: &str) -> Vec<Box<(String, lex_type)>> {
     let mut chars = command.char_indices().peekable();
 
     while let Some((_i, ch)) = chars.next() {
-        if ch != '+' {
+        if ch != '+' && ch != '*' && ch != '/' && ch != '-' && ch != ' '{
             tmp.push(ch);
         }
 
         let at_end = chars.peek().is_none();
-        if ch == '+' || at_end {
+        if ch == ' ' || ch == '+' || ch == '*' || ch == '/' || ch == '-' || at_end {
             if !tmp.is_empty() {
                 vec.push(Box::new((tmp.clone(), lex_type::Number)));
                 tmp.clear();
             }
             if ch == '+' {
                 vec.push(Box::new(("+".into(), lex_type::Add)));
+            }else if ch == '*'{
+                vec.push(Box::new(("*".into(), lex_type::Mult)));
+            }else if ch == '/'{
+                vec.push(Box::new(("/".into(), lex_type::Div)));
+            }else if ch == '-'{
+                vec.push(Box::new(("-".into(), lex_type::Sub)));
             }
         }
     }
@@ -132,12 +141,24 @@ fn handle_command(command: &str){
         let t0 = &tokens[0];
         let t1 = &tokens[1];
         let t2 = &tokens[2];
-
         if t0.1 == lex_type::Number && t1.1 == lex_type::Add && t2.1 == lex_type::Number {
             let n1 = t0.0.parse::<i32>().unwrap_or(0);
             let n2 = t2.0.parse::<i32>().unwrap_or(0);
+            println!("{} {}", n1, n2);
             println!("{}", n1 + n2);
-        } else {
+        } else if t0.1 == lex_type::Number && t1.1 == lex_type::Mult && t2.1 == lex_type::Number{
+            let n1 = t0.0.parse::<i32>().unwrap_or(0);
+            let n2 = t2.0.parse::<i32>().unwrap_or(0);
+            println!("{}", n1*n2);
+        }else if t0.1 == lex_type::Number && t1.1 == lex_type::Div && t2.1 == lex_type::Number{
+            let n1 = t0.0.parse::<i32>().unwrap_or(0);
+            let n2 = t2.0.parse::<i32>().unwrap_or(0);
+            println!("{}", (n1 as f32 /n2 as f32));
+        } else if t0.1 == lex_type::Number && t1.1 == lex_type::Sub && t2.1 == lex_type::Number{
+            let n1 = t0.0.parse::<i32>().unwrap_or(0);
+            let n2 = t2.0.parse::<i32>().unwrap_or(0);
+            println!("{}", n1-n2);
+        }else{
             println!("Pattern does not match.");
         }
     } else {
