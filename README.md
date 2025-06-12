@@ -24,9 +24,10 @@ Install dependencies:
 rustup default nightly
 rustup component add rust-src
 cargo install bootimage
-
+```
 ### Running the Operating system
 
 in the Rust_OS Directory Run
-
+```bash
 - Cargo run
+```
