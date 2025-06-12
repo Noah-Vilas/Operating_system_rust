@@ -31,3 +31,13 @@ in the Rust_OS Directory Run
 ```bash
 - Cargo run
 ```
+
+
+## Current Stage
+
+Here You can see the Drive image from my .img in the folder, and after that info is shown you'll see a kernel able to do simple 1 expression arithmetic.
+![Drive_Info](https://github.com/user-attachments/assets/574baf9d-9dc9-49b5-81fe-cd17aad57575)
+
+## Next Stages
+
+Getting the ability to access the hard drive and read the file system, then read and write as well as create new files.
