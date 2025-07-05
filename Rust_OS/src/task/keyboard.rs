@@ -2,11 +2,11 @@ use conquer_once::spin::OnceCell;
 use crossbeam_queue::ArrayQueue;
 use core::{pin::Pin, task::{Poll, Context}};
 use futures_util::stream::Stream;
-use crate::task::CLI;
+
 
 use spin::Mutex;
 use alloc::string::String;
-use alloc::sync::Arc;
+
 
 
 static INPUT_LINE: Mutex<String> = Mutex::new(String::new());

@@ -5,6 +5,7 @@ pub mod executor;
 pub mod keyboard;
 pub mod CLI;
 pub mod read_drive;
+pub mod system_vars;
 
 pub struct Task {
     id: TaskId,

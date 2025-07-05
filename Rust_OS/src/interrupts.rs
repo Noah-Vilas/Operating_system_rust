@@ -1,4 +1,4 @@
-use crate::{gdt, print, println};
+use crate::{gdt, println};
 use lazy_static::lazy_static;
 use pic8259::ChainedPics;
 use spin;
@@ -71,9 +71,8 @@ pub fn init_idt() {
 
 
 extern "x86-interrupt" fn ata_primary_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    println!("ATA Primary Interrupt fired!");
-
     // Notify PIC that interrupt handling is done
+    println!("atafired");
     unsafe {
         PICS.lock().notify_end_of_interrupt(PIC_1_OFFSET + ATA_PRIMARY_IRQ);
     }
@@ -129,7 +128,7 @@ extern "x86-interrupt" fn stack_segment_fault_handler(stack_frame: InterruptStac
 }
 
 extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, pagefaultcode: PageFaultErrorCode) {
-    println!("EXCEPTION: Page Fault Error: \n{:#?}", stack_frame);
+    println!("EXCEPTION: Page Fault Error: \n{:#?}\nError Code: {:#x}", stack_frame ,pagefaultcode);
 }
 
 extern "x86-interrupt" fn overflow_handler(stack_frame: InterruptStackFrame) {

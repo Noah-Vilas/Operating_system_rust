@@ -7,12 +7,12 @@ use futures_util::StreamExt;
 use futures_util::task::AtomicWaker;
 
 use crate::println;
+use crate::task::system_vars::system_vars;
+use crate::task::read_drive::{read_directory, create_file, zero_sector, create_root_directory};
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use spin::Mutex;
 use alloc::string::String;
-use alloc::sync::Arc;
 
 ////////////////
 
@@ -77,21 +77,28 @@ pub(crate) fn add_command(cmd: String) {
 /////////////////////
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum lex_type{
+pub enum LexType{
     Number,
     Stri,
     Add,
     Mult,
     Div,
-    Sub
+    Sub,
+    DirPointer,
+    Ls,
+    Stringy,
+    CreateDir,
+    ZeroDir,
+    CreateRoot,
+    CreateFile
 }
 
 
 
-fn lexer(command: &str) -> Vec<Box<(String, lex_type)>> {
+fn lexer(command: &str) -> Vec<Box<(String, LexType)>> {
     use alloc::{vec::Vec, string::String};
 
-    let mut vec: Vec<Box<(String, lex_type)>> = Vec::new();
+    let mut vec: Vec<Box<(String, LexType)>> = Vec::new();
     let mut tmp = String::new();
     let mut chars = command.char_indices().peekable();
 
@@ -102,18 +109,25 @@ fn lexer(command: &str) -> Vec<Box<(String, lex_type)>> {
 
         let at_end = chars.peek().is_none();
         if ch == ' ' || ch == '+' || ch == '*' || ch == '/' || ch == '-' || at_end {
+
             if !tmp.is_empty() {
-                vec.push(Box::new((tmp.clone(), lex_type::Number)));
+                let token_type = if tmp.to_lowercase()=="dirpointer"{
+                    LexType::DirPointer
+                }else if tmp.to_lowercase()=="ls"{
+                    LexType::Ls
+                }else if tmp.to_lowercase()=="cdir" {
+                    LexType::CreateDir
+                }else if tmp.to_lowercase()=="zb" {
+                    LexType::ZeroDir
+                }else if tmp.to_lowercase()=="cr" {
+                    LexType::CreateRoot
+                }else if tmp.to_lowercase()=="cf" {
+                    LexType::CreateFile
+                }else{
+                    LexType::Stringy
+                };
+                vec.push(Box::new((tmp.clone(), token_type)));
                 tmp.clear();
-            }
-            if ch == '+' {
-                vec.push(Box::new(("+".into(), lex_type::Add)));
-            }else if ch == '*'{
-                vec.push(Box::new(("*".into(), lex_type::Mult)));
-            }else if ch == '/'{
-                vec.push(Box::new(("/".into(), lex_type::Div)));
-            }else if ch == '-'{
-                vec.push(Box::new(("-".into(), lex_type::Sub)));
             }
         }
     }
@@ -123,6 +137,9 @@ fn lexer(command: &str) -> Vec<Box<(String, lex_type)>> {
 
 
 
+unsafe fn dirpointer(){
+    println!("Current dir: {}", system_vars.current_dir);
+}
 
 
 
@@ -141,28 +158,52 @@ fn handle_command(command: &str){
         let t0 = &tokens[0];
         let t1 = &tokens[1];
         let t2 = &tokens[2];
-        if t0.1 == lex_type::Number && t1.1 == lex_type::Add && t2.1 == lex_type::Number {
+        if t0.1 == LexType::Number && t1.1 == LexType::Add && t2.1 == LexType::Number {
             let n1 = t0.0.parse::<i32>().unwrap_or(0);
             let n2 = t2.0.parse::<i32>().unwrap_or(0);
             println!("{} {}", n1, n2);
             println!("{}", n1 + n2);
-        } else if t0.1 == lex_type::Number && t1.1 == lex_type::Mult && t2.1 == lex_type::Number{
+        } else if t0.1 == LexType::Number && t1.1 == LexType::Mult && t2.1 == LexType::Number{
             let n1 = t0.0.parse::<i32>().unwrap_or(0);
             let n2 = t2.0.parse::<i32>().unwrap_or(0);
             println!("{}", n1*n2);
-        }else if t0.1 == lex_type::Number && t1.1 == lex_type::Div && t2.1 == lex_type::Number{
+        }else if t0.1 == LexType::Number && t1.1 == LexType::Div && t2.1 == LexType::Number{
             let n1 = t0.0.parse::<i32>().unwrap_or(0);
             let n2 = t2.0.parse::<i32>().unwrap_or(0);
             println!("{}", (n1 as f32 /n2 as f32));
-        } else if t0.1 == lex_type::Number && t1.1 == lex_type::Sub && t2.1 == lex_type::Number{
+        } else if t0.1 == LexType::Number && t1.1 == LexType::Sub && t2.1 == LexType::Number{
             let n1 = t0.0.parse::<i32>().unwrap_or(0);
             let n2 = t2.0.parse::<i32>().unwrap_or(0);
             println!("{}", n1-n2);
         }else{
             println!("Pattern does not match.");
         }
-    } else {
-        println!("Not enough tokens.");
+    } else if tokens[0].1 ==LexType::DirPointer{
+        unsafe{dirpointer();}
+    }else if tokens[0].1 == LexType::Ls{
+        if tokens.len()==1{
+            unsafe{read_directory(system_vars.current_dir);}
+        }else{
+            let s: &String = &tokens[1].0;
+            let num: u32 = s.parse::<u32>().unwrap_or(0);
+            unsafe{read_directory(num)}
+        }
+    }else if tokens[0].1 == LexType::CreateFile && tokens[1].1 == LexType::Stringy{
+        unsafe{create_file(&tokens[1].0, system_vars.current_dir)}
+    }
+    else if tokens[0].1 == LexType::ZeroDir{
+        if tokens.len() == 2{
+            let s: &String = &tokens[1].0;
+            let num: u32 = s.parse::<u32>().unwrap_or(0);
+            unsafe{zero_sector(num)}
+        }else{
+        
+        }
+    }
+    else if tokens[0].1 == LexType::CreateRoot{
+        unsafe{create_root_directory()}
+    }else{
+        println!("not a valid command");
     }
 }
 

@@ -27,6 +27,9 @@ test-args = [
     "-display", "none",
     "-drive", "file=fs.img,format=raw,index=1,media=disk",
 ]
+run-args = [
+   "-drive", "file=fs.img,format=raw,index=1,media=disk"
+]
 test-success-exit-code = 33    
 test-timeout = 300
 

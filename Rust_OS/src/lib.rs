@@ -3,7 +3,6 @@
 #![feature(abi_x86_interrupt)]
 #![feature(alloc_error_handler)]
 
-use core::panic::PanicInfo;
 use bootloader::BootInfo;
 use crate::memory::{BootFrameAlloc, init_heap};
 
@@ -24,7 +23,7 @@ pub fn init(boot_info: &'static BootInfo) {
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let mut mapper = unsafe { init_mapper(phys_mem_offset) };
 
-    let mut frame_allocator = unsafe {
+    let frame_allocator = unsafe {
         BootFrameAlloc::init(&boot_info.memory_map)
     };
 

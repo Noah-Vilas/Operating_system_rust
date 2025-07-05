@@ -3,9 +3,12 @@
 
 
 
-use Rust_OS::{get_free_memory_regions, print_memory_layout, init_mapper, println,
+use Rust_OS::{get_free_memory_regions, print_memory_layout, init_mapper, println, print,
     memory::BootFrameAlloc,
-    task::{keyboard, CLI, read_drive}
+    task::{keyboard,
+         CLI,
+         read_drive::{ata_read_sector,ata_write_sector},
+        }
 };
 use Rust_OS::task::{Task, executor::Executor};
 use core::panic::PanicInfo;
@@ -23,9 +26,14 @@ entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     Rust_OS::init(boot_info);
 
-
+    let mut buffer = [0u8; 512];
+    unsafe {
+        ata_read_sector(0x00000000, &mut buffer);
+    }
+    for (i, byte) in buffer.iter().enumerate() {
+        print!("{:02X} ", byte);
+    }
     let mut executor = Executor::new();
-    executor.spawn(Task::new(read_drive::Test_drive()));
     executor.spawn(Task::new(CLI::CLI_START()));
     executor.spawn(Task::new(keyboard::handle_keypresses()));
     executor.run();
