@@ -133,9 +133,10 @@ fn lexer(command: &str) -> Vec<Box<(String, LexType)>> {
     }
 
     vec
+
+
+
     
-
-
 }
 
 
